@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор СПН v12.11 (Specificity Fix)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geologica:wght@400;600;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+    /* --- Начало CSS (v12.11) --- */
+    :root {
+        --font-body: 'Geologica', sans-serif;
+        --font-heading: 'Space Grotesk', sans-serif;
+        --calc-bg: #FFFFFF;
+        --calc-text: #1A202C;
+        --calc-text-light: #4A5568;
+        --calc-text-placeholder: #A0AEC0;
+        --calc-border-color: #CBD5E0;
+        --calc-border-focus-color: #4299E1;
+        --calc-primary-accent: #1A202C;
+        --calc-primary-accent-text: #FFFFFF;
+        --calc-error: #E53E3E;
+        --calc-error-bg: #FFF5F5;
+        --calc-base-font-size: 16px;
+        --calc-line-height: 1.5;
+        --calc-radius: 20px;
+        --calc-spacing-unit: 8px;
+    }
+
+    .spn-calc-container, .spn-calc-container *, .spn-calc-container button {
+        margin: 0; padding: 0; border: 0; vertical-align: baseline;
+        box-sizing: border-box; font-family: var(--font-body);
+        background: none; color: inherit;
+    }
+    button { cursor: pointer; }
+
+    .spn-calc-container {
+        font-size: var(--calc-base-font-size);
+        line-height: var(--calc-line-height);
+        color: var(--calc-text);
+        background-color: var(--calc-bg);
+        margin: 0;
+        padding: calc(var(--calc-spacing-unit) * 3) calc(var(--calc-spacing-unit) * 2);
+        position: relative;
+        width: 100%;
+    }
+
+    .spn-calc-container input[type=number]::-webkit-outer-spin-button,
+    .spn-calc-container input[type=number]::-webkit-inner-spin-button {
+        -webkit-appearance: none; margin: 0;
+    }
+    .spn-calc-container input[type=number] { -moz-appearance: textfield; }
+
+    .spn-calc-header {
+        font-family: var(--font-heading);
+        font-size: 28px;
+        font-weight: 700;
+        line-height: 1.3;
+        text-align: center;
+        margin-bottom: calc(var(--calc-spacing-unit) * 4);
+        color: var(--calc-text);
+    }
+
+    .spn-calc-card { overflow: hidden; }
+    .spn-calc-card-content {
+        display: flex; flex-wrap: wrap;
+        gap: calc(var(--calc-spacing-unit) * 3);
+    }
+
+    .spn-calc-inputs-column { flex: 1 1 60%; padding: 0; min-width: 300px; }
+    .spn-calc-visualization-column {
+        flex: 1 1 30%;
+        padding: 0; display: flex;
+        align-items: center; justify-content: center;
+        min-height: 280px;
+    }
+
+    .spn-calc-parameters {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: calc(var(--calc-spacing-unit) * 3);
+        margin-bottom: calc(var(--calc-spacing-unit) * 4);
+    }
+
+    .spn-calc-form-group {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .spn-calc-form-group label {
+        display: block;
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: calc(var(--calc-spacing-unit) * 0.75);
+        color: var(--calc-text);
+        line-height: 1.3;
+    }
+    /* <<< ИЗМЕНЕНО: Добавлен .spn-calc-container для увеличения специфичности >>> */
+    .spn-calc-container input[type="number"].spn-calc-form-control {
+        padding: calc(var(--calc-spacing-unit) * 0.75) calc(var(--calc-spacing-unit) * 0.25);
+        font-size: 35px; 
+        font-weight: 700;
+        line-height: 1.2;
+        color: var(--calc-text);
+        background-color: transparent;
+        border: none;
+        border-bottom: 1px solid var(--calc-border-color);
+        border-radius: 0;
+        transition: border-color 0.3s ease;
+        -webkit-appearance: textfield;
+        -moz-appearance: textfield;
+        appearance: textfield;
+        min-height: 50px; 
+        width: 100%;
+    }
+    /* <<< ИЗМЕНЕНО: Добавлен .spn-calc-container для увеличения специфичности >>> */
+    .spn-calc-container input[type="number"].spn-calc-form-control::placeholder {
+        color: var(--calc-text-placeholder);
+        font-weight: 400; /* Может переопределяться Elementor, если его специфичность выше */
+        font-size: 15px; /* Может переопределяться Elementor */
+    }
+    /* <<< ИЗМЕНЕНО: Добавлен .spn-calc-container для увеличения специфичности >>> */
+    .spn-calc-container input[type="number"].spn-calc-form-control:focus {
+        border-color: var(--calc-border-focus-color);
+        outline: 0; box-shadow: none;
+    }
+
+    /* Для селектов также можно добавить .spn-calc-container, если есть конфликты */
+    .spn-calc-container select.spn-calc-form-control {
+        font-size: 22px; 
+        font-weight: 700;
+        color: var(--calc-text);
+        background-color: transparent;
+        border: none;
+        border-bottom: 1px solid var(--calc-border-color);
+        border-radius: 0;
+        padding: calc(var(--calc-spacing-unit) * 1) calc(var(--calc-spacing-unit) * 3.5) calc(var(--calc-spacing-unit) * 1) calc(var(--calc-spacing-unit) * 0.25);
+        min-height: 46px;
+        width: 100%;
+        line-height: 1.2;
+        cursor: pointer;
+        -webkit-appearance: none; -moz-appearance: none; appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%234A5568'%3E%3Cpath fill-rule='evenodd' d='M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z' clip-rule='evenodd' /%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right calc(var(--calc-spacing-unit) * 1) center;
+        background-size: 18px 18px;
+    }
+    .spn-calc-container select.spn-calc-form-control:focus { border-color: var(--calc-border-focus-color); outline: 0; box-shadow: none; }
+    .spn-calc-container select.spn-calc-form-control option { color: var(--calc-text); background-color: var(--calc-bg); font-size: 16px; font-weight: 400; }
+
+    .spn-calc-container .spn-calc-form-control.is-invalid { border-color: var(--calc-error); } /* Добавлен .spn-calc-container */
+    .spn-calc-container .spn-calc-form-control.is-invalid:focus { border-color: var(--calc-error); } /* Добавлен .spn-calc-container */
+
+    .spn-calc-validation-message { font-size: 12px; color: var(--calc-error); margin-top: calc(var(--calc-spacing-unit) * 0.5); min-height: 1.3em; display: block; }
+    .spn-calc-validation-message:empty { margin-top: 0; height: 0; visibility: hidden; min-height:0; }
+
+    .spn-calc-density-display { display: block; font-size: 12px; color: var(--calc-text-light); margin-top: calc(var(--calc-spacing-unit) * 0.5); min-height: 1.3em; }
+    .spn-calc-density-display:empty { min-height: 0; visibility: hidden; margin-top:0; }
+
+    .spn-calc-quick-select { margin-top: calc(var(--calc-spacing-unit) * 1.25); display: flex; flex-wrap: wrap; gap: calc(var(--calc-spacing-unit) * 0.75); }
+    button.spn-calc-quick-select-item {
+        font-size: 13px;
+        font-weight: 600; color: var(--calc-text-light); background-color: var(--calc-bg);
+        border: 1px solid var(--calc-border-color); border-radius: var(--calc-radius);
+        padding: calc(var(--calc-spacing-unit) * 0.6) calc(var(--calc-spacing-unit) * 1.5);
+        cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+        line-height: 1.3;
+    }
+    button.spn-calc-quick-select-item:hover { border-color: var(--calc-primary-accent); color: var(--calc-primary-accent); background-color: #f5f5f5; }
+    button.spn-calc-quick-select-item:active { transform: scale(0.95); }
+    button.spn-calc-quick-select-item.is-active { background-color: var(--calc-primary-accent); color: var(--calc-primary-accent-text); border-color: var(--calc-primary-accent); }
+    button.spn-calc-quick-select-item.is-active:hover { background-color: #333; border-color: #333; }
+
+    .spn-calc-result {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: calc(var(--calc-spacing-unit) * 2);
+        text-align: left;
+        margin-top: calc(var(--calc-spacing-unit) * 4);
+        position: relative;
+    }
+    .spn-calc-result-item {
+        flex: 1 1 auto;
+        min-width: 140px;
+        margin-bottom: calc(var(--calc-spacing-unit) * 1.5);
+    }
+    .spn-calc-result-item.result-updated { animation: fadeInResult 0.4s ease forwards; }
+    @keyframes fadeInResult { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    .spn-calc-result-title { font-size: 15px; font-weight: 400; color: var(--calc-text-light); margin-bottom: calc(var(--calc-spacing-unit) * 0.5); display: flex; align-items: center; }
+    .spn-calc-result-value { font-size: 32px; font-weight: 700; color: var(--calc-text); line-height: 1.1; }
+    .spn-calc-result-value span.unit { font-size: 15px; font-weight: 400; color: var(--calc-text-light); margin-left: calc(var(--calc-spacing-unit) * 0.5); }
+    .spn-calc-result-value span.unit-kg { font-size: 13px; font-weight: 400; color: var(--calc-text-light); margin-left: var(--calc-spacing-unit) * 0.75; }
+
+    .spn-calc-info-icon {
+        display: inline-block; width: 16px; height: 16px;
+        border: 1px solid var(--calc-text-light); border-radius: 50%;
+        color: var(--calc-text-light); font-size: 11px; font-weight: 700;
+        line-height: 14px; text-align: center;
+        margin-left: var(--calc-spacing-unit); cursor: help;
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
+    .spn-calc-info-icon:hover { background-color: var(--calc-text-light); color: var(--calc-bg); }
+
+    .spn-calc-svg-container { width: 100%; max-width: 180px; margin: 0 auto; }
+    .spn-calc-svg { width: 100%; height: auto; display: block; }
+
+    #svg-column-outline { fill: none; stroke: var(--calc-border-color); stroke-width: 1.5; transition: x 0.3s ease, width 0.3s ease, height 0.3s ease; }
+    #svg-packing { fill: rgba(0, 0, 0, 0.08); transition: fill 0.3s ease, x 0.3s ease, y 0.3s ease, width 0.3s ease, height 0.3s ease; }
+    #svg-top-plug, #svg-bottom-plug { fill: rgba(0, 0, 0, 0.15); transition: fill 0.3s ease, x 0.3s ease, y 0.3s ease, width 0.3s ease, height 0.3s ease; }
+    #svg-packing, #svg-top-plug, #svg-bottom-plug { stroke: none; }
+    .svg-dimension-label {
+        font-family: var(--font-body); font-size: 10px; font-weight: 600;
+        fill: var(--calc-text-light); text-anchor: middle;
+        transition: x 0.3s ease, y 0.3s ease, transform 0.3s ease, fill 0.3s ease, display 0.1s linear, dominant-baseline 0.1s linear;
+    }
+    .svg-dimension-line {
+        stroke: var(--calc-text-light); stroke-width: 0.5; stroke-dasharray: 2 2;
+        transition: x1 0.3s ease, y1 0.3s ease, x2 0.3s ease, y2 0.3s ease, stroke 0.3s ease, display 0.1s linear;
+    }
+
+    @media only screen and (min-width: 601px) and (max-width: 950px) { /* Планшеты */
+        .spn-calc-parameters { grid-template-columns: repeat(2, 1fr); align-items: start; }
+        .spn-calc-inputs-column { flex-basis: 55%; }
+        .spn-calc-visualization-column { flex-basis: 40%; min-height: 300px;}
+    }
+    @media only screen and (max-width: 600px) { /* Мобильные */
+        .spn-calc-header { font-size: 22px; margin-bottom: calc(var(--calc-spacing-unit) * 3); }
+        .spn-calc-card-content { flex-direction: column; }
+        .spn-calc-visualization-column { order: 1; min-height: 250px; margin-top: var(--calc-spacing-unit) * 2;}
+        .spn-calc-inputs-column { order: 0; }
+        /* Для .spn-calc-container input[type="number"].spn-calc-form-control специфичность уже повышена,
+           поэтому если тут нужно другое значение font-size, его можно задать.
+           Если нет, то будет наследоваться 35px. */
+        /* .spn-calc-container input[type="number"].spn-calc-form-control { font-size: 28px; min-height: 48px; } */
+        
+        .spn-calc-container select.spn-calc-form-control { font-size: 20px; min-height: 44px; }
+        .spn-calc-result-value { font-size: 28px; }
+        .spn-calc-quick-select-item { font-size: 12px; padding: calc(var(--calc-spacing-unit) * 0.5) calc(var(--calc-spacing-unit) * 1.25); }
+        .spn-calc-form-group label { font-size: 14px;}
+    }
+
+    @media (min-width: 951px) { /* ПК */
+        .spn-calc-container { padding: calc(var(--calc-spacing-unit) * 4) calc(var(--calc-spacing-unit) * 3); }
+        .spn-calc-header { font-size: 30px; text-align: left; margin-bottom: calc(var(--calc-spacing-unit) * 3.5); }
+        .spn-calc-parameters {
+            grid-template-columns: repeat(2, 1fr);
+            gap: calc(var(--calc-spacing-unit) * 3.5) calc(var(--calc-spacing-unit) * 2.5);
+            margin-bottom: calc(var(--calc-spacing-unit) * 5);
+            align-items: start; 
+        }
+        /* Для .spn-calc-container input[type="number"].spn-calc-form-control специфичность уже повышена,
+           здесь только min-height, если он отличается от базового. Font-size унаследуется 35px. */
+        .spn-calc-container input[type="number"].spn-calc-form-control { 
+            min-height: 50px; 
+        }
+        .spn-calc-container select.spn-calc-form-control { font-size: 25px; min-height: 50px; padding-top: calc(var(--calc-spacing-unit) * 1.25); padding-bottom: calc(var(--calc-spacing-unit) * 1.25); }
+        .spn-calc-form-group label { font-size: 16px; }
+
+        .spn-calc-result {
+            margin-top: calc(var(--calc-spacing-unit) * 5);
+        }
+        .spn-calc-result-item { margin-bottom: 0; }
+        .spn-calc-result-title { font-size: 16px; }
+        .spn-calc-result-value { font-size: 36px; }
+        .spn-calc-result-value span.unit { font-size: 16px; }
+
+        .spn-calc-visualization-column { min-height: 320px; }
+        .spn-calc-svg-container { max-width: 200px; }
+    }
+    /* --- Конец CSS --- */
+    </style>
+</head>
+<body>
+
+<!-- HTML остается таким же, как в v12.10 -->
+<div class="spn-calc-container">
+   <!-- <h2 class="spn-calc-header">Калькулятор засыпки СПН</h2>-->
+    <div class="spn-calc-card">
+        <div class="spn-calc-card-content">
+            <div class="spn-calc-inputs-column" role="form" aria-labelledby="calc-header-inputs">
+                 <h3 id="calc-header-inputs" class="visually-hidden">Параметры расчета</h3>
+                 <div class="spn-calc-parameters">
+                    <div class="spn-calc-form-group">
+                        <label for="spnHeight">Высота царги, мм</label>
+                        <input type="number" id="spnHeight" value="600" min="0" max="5000" step="10" class="spn-calc-form-control" placeholder="1000" aria-describedby="spnHeightValidation"/>
+                        <div id="spnHeightValidation" class="spn-calc-validation-message" aria-live="polite"></div>
+                        <div class="spn-calc-quick-select">
+                            <button type="button" class="spn-calc-quick-select-item" data-value="500">500</button>
+                            <button type="button" class="spn-calc-quick-select-item" data-value="600">600</button>
+                            <button type="button" class="spn-calc-quick-select-item" data-value="1000">1000</button>
+                            <button type="button" class="spn-calc-quick-select-item" data-value="1300">1300</button>
+                        </div>
+                    </div>
+                    <div class="spn-calc-form-group">
+                        <label for="spnDiameter">Ø Внутренний, мм</label>
+                        <input type="number" id="spnDiameter" value="48" min="10" max="150" step="1" class="spn-calc-form-control" placeholder="48" aria-describedby="spnDiameterValidation"/>
+                        <div id="spnDiameterValidation" class="spn-calc-validation-message" aria-live="polite"></div>
+                        <div class="spn-calc-quick-select">
+                            <button type="button" class="spn-calc-quick-select-item" data-value="35">35 (1.5")</button>
+                            <button type="button" class="spn-calc-quick-select-item is-active" data-value="48">48 (2")</button>
+                            <button type="button" class="spn-calc-quick-select-item" data-value="72">72 (3")</button>
+                        </div>
+                    </div>
+                    <div class="spn-calc-form-group">
+                        <label for="spnHeightTopRpn">Пыж верхний, мм</label>
+                        <input type="number" id="spnHeightTopRpn" value="25" min="0" max="200" step="5" class="spn-calc-form-control" placeholder="25" aria-describedby="spnHeightTopRpnValidation"/>
+                        <div id="spnHeightTopRpnValidation" class="spn-calc-validation-message" aria-live="polite"></div>
+                        <div class="spn-calc-quick-select">
+                            <button type="button" class="spn-calc-quick-select-item is-active" data-value="25">25</button>
+                            <button type="button" class="spn-calc-quick-select-item" data-value="50">50</button>
+                            <button type="button" class="spn-calc-quick-select-item" data-value="100">100</button>
+                        </div>
+                    </div>
+                    <div class="spn-calc-form-group">
+                        <label for="spnHeightBottomRpn">Пыж нижний, мм</label>
+                        <input type="number" id="spnHeightBottomRpn" value="25" min="0" max="200" step="5" class="spn-calc-form-control" placeholder="25" aria-describedby="spnHeightBottomRpnValidation"/>
+                        <div id="spnHeightBottomRpnValidation" class="spn-calc-validation-message" aria-live="polite"></div>
+                        <div class="spn-calc-quick-select">
+                            <button type="button" class="spn-calc-quick-select-item is-active" data-value="25">25</button>
+                            <button type="button" class="spn-calc-quick-select-item" data-value="50">50</button>
+                            <button type="button" class="spn-calc-quick-select-item" data-value="100">100</button>
+                        </div>
+                    </div>
+                    <div class="spn-calc-form-group">
+                        <label for="spnSize">Размер насадки</label>
+                        <select id="spnSize" class="spn-calc-form-control" aria-describedby="spnDensityDisplay spnSizeValidation">
+                        </select>
+                        <div id="spnSizeValidation" class="spn-calc-validation-message" aria-live="polite"></div>
+                        <span id="spnDensityDisplay" class="spn-calc-density-display"></span>
+                    </div>
+                    <div class="spn-calc-form-group">
+                        <label for="spnType">Тип насадки</label>
+                        <select id="spnType" class="spn-calc-form-control" aria-describedby="spnTypeValidation">
+                            <option value="stainless">Нержавейка</option>
+                            <option value="copper">Медь</option>
+                        </select>
+                        <div id="spnTypeValidation" class="spn-calc-validation-message" aria-live="polite"></div>
+                        <span class="spn-calc-density-display"></span>
+                    </div>
+                 </div>
+                 <div class="spn-calc-result" role="region" aria-label="Результаты расчета">
+                     <div class="spn-calc-result-item" aria-live="polite"> <div class="spn-calc-result-title">Объем засыпки</div> <div class="spn-calc-result-value" id="spnResultVolume">0.00 <span class="unit">л</span></div> </div>
+                     <div class="spn-calc-result-item" aria-live="polite"> <div class="spn-calc-result-title">Вес СПН</div> <div class="spn-calc-result-value" id="spnResultWeight">0 <span class="unit">г</span></div> </div>
+                     <div class="spn-calc-result-item" aria-live="polite"> <div class="spn-calc-result-title"> Примерная ВЭТС <span class="spn-calc-info-icon" title="Высота Эквивалентная Теоретической Ступени. Очень приблизительная оценка, зависит от скорости пара, флегмового числа и других условий.">?</span> </div> <div class="spn-calc-result-value" id="spnResultHETP">N/A <span class="unit">мм</span></div> </div>
+                     <div class="spn-calc-result-item" aria-live="polite"> <div class="spn-calc-result-title"> Реком. P нагрева <span class="spn-calc-info-icon" title="Ориентировочная мощность для работы близко к предзахлебной (~11 Вт/см²). Реальная может отличаться в зависимости от утепления, давления и других факторов.">?</span> </div> <div class="spn-calc-result-value" id="spnResultPower">N/A <span class="unit">кВт</span></div> </div>
+                 </div>
+            </div>
+            <div class="spn-calc-visualization-column" role="img" aria-label="Визуализация царги с насадкой">
+                <div class="spn-calc-svg-container">
+                     <svg id="spn-svg" class="spn-calc-svg" viewBox="0 0 150 400" preserveAspectRatio="xMidYMid meet">
+                       <rect id="svg-column-outline" x="25" y="0" width="100" height="300" rx="3"/>
+                       <rect id="svg-bottom-plug" x="25" y="275" width="100" height="25"/>
+                       <rect id="svg-packing" x="25" y="25" width="100" height="250"/>
+                       <rect id="svg-top-plug" x="25" y="0" width="100" height="25"/>
+                       <line id="svg-height-line-top" class="svg-dimension-line" x1="5" y1="0" x2="25" y2="0"/>
+                       <line id="svg-height-line-bottom" class="svg-dimension-line" x1="5" y1="300" x2="25" y2="300"/>
+                       <line id="svg-height-line-vert" class="svg-dimension-line" x1="15" y1="0" x2="15" y2="300"/>
+                       <text id="svg-height-label" class="svg-dimension-label" x="15" y="150" transform="rotate(-90 15 150)">0 мм</text>
+                       <line id="svg-diameter-line-left" class="svg-dimension-line" x1="25" y1="310" x2="25" y2="325"/>
+                       <line id="svg-diameter-line-right" class="svg-dimension-line" x1="125" y1="310" x2="125" y2="325"/>
+                       <line id="svg-diameter-line-horz" class="svg-dimension-line" x1="25" y1="315" x2="125" y2="315"/>
+                       <text id="svg-diameter-label" class="svg-dimension-label" x="75" y="335">0 мм</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="visually-hidden" aria-live="assertive" id="calc-status"></div>
+</div>
+<style>.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }</style>
+
+<script>
+// --- JavaScript (v12.11 - Specificity Fix) ---
+// JavaScript код остается таким же, как в v12.9/v12.10
+// ... (весь JavaScript код из v12.9/v12.10) ...
+document.addEventListener('DOMContentLoaded', function() {
+  const heightInput = document.getElementById('spnHeight');
+  const diameterInput = document.getElementById('spnDiameter');
+  const heightTopRpnInput = document.getElementById('spnHeightTopRpn');
+  const heightBottomRpnInput = document.getElementById('spnHeightBottomRpn');
+  const typeSelect = document.getElementById('spnType');
+  const sizeSelect = document.getElementById('spnSize');
+  const resultItems = document.querySelectorAll('.spn-calc-result-item');
+  const resultVolumeValue = document.getElementById('spnResultVolume');
+  const resultWeightValue = document.getElementById('spnResultWeight');
+  const hetpResultValue = document.getElementById('spnResultHETP');
+  const powerResultValue = document.getElementById('spnResultPower');
+  const parameterGroups = document.querySelectorAll('.spn-calc-form-group');
+  const densityDisplaySpan = document.getElementById('spnDensityDisplay');
+  const calcStatus = document.getElementById('calc-status');
+
+  const svgColumnOutline = document.getElementById('svg-column-outline');
+  const svgTopPlug = document.getElementById('svg-top-plug');
+  const svgPacking = document.getElementById('svg-packing');
+  const svgBottomPlug = document.getElementById('svg-bottom-plug');
+  const svgHeightLabel = document.getElementById('svg-height-label');
+  const svgDiameterLabel = document.getElementById('svg-diameter-label');
+  const svgHeightLineVert = document.getElementById('svg-height-line-vert');
+  const svgHeightLineTop = document.getElementById('svg-height-line-top');
+  const svgHeightLineBottom = document.getElementById('svg-height-line-bottom');
+  const svgDiameterLineLeft = document.getElementById('svg-diameter-line-left');
+  const svgDiameterLineRight = document.getElementById('svg-diameter-line-right');
+  const svgDiameterLineHorz = document.getElementById('svg-diameter-line-horz');
+
+  const SVG_VIEWBOX_WIDTH = 150;
+  const MAX_DIAMETER_MM = 150;
+  const MAX_VISUAL_HEIGHT_SVG = 300;
+
+  const spnData = {
+    stainless: [
+        { value: '1350', text: '2.0 х 2.0 х 0.2 мм', hetp_base_mm: 20 },
+        { value: '850',  text: '3.0 х 3.0 х 0.2 мм', hetp_base_mm: 25 },
+        { value: '1000', text: '3.0 х 3.0 х 0.25 мм', hetp_base_mm: 28 },
+        { value: '950',  text: '3.5 х 3.5 х 0.25 мм', hetp_base_mm: 30 },
+        { value: '900',  text: '4.0 х 4.0 х 0.3 мм', hetp_base_mm: 35 },
+        { value: '950',  text: '5.0 х 5.0 х 0.4 мм', hetp_base_mm: 40 }
+    ],
+    copper: [
+        { value: '1350', text: '3.0 х 3.0 х 0.25 мм', hetp_base_mm: 27 },
+        { value: '1350', text: '3.5 х 3.5 х 0.25 мм', hetp_base_mm: 29 },
+        { value: '1400', text: '4.0 х 4.0 х 0.3 мм', hetp_base_mm: 34 },
+        { value: '1400', text: '5.0 х 5.0 х 0.4 мм', hetp_base_mm: 39 }
+    ]
+  };
+  const defaultValues = { height: '600', diameter: '48', heightTopRpn: '25', heightBottomRpn: '25', type: 'stainless' };
+
+  function getSelectedPackingData() {
+        const selectedType = typeSelect.value;
+        const selectedSizeValue = sizeSelect.value;
+        if (!selectedType || !selectedSizeValue || !spnData[selectedType]) return null;
+        return spnData[selectedType].find(option => option.value === selectedSizeValue);
+  }
+
+  function updateSizeOptions() {
+        const selectedType = typeSelect.value;
+        const currentSizeValue = sizeSelect.value;
+        const options = spnData[selectedType] || [];
+        sizeSelect.innerHTML = '';
+        let newSelectedIndex = 0;
+        let foundPreviousValueOrSimilar = false;
+        if (options.length > 0) {
+            options.forEach((optionData, index) => {
+                const option = document.createElement('option');
+                option.value = optionData.value;
+                option.text = optionData.text;
+                if (optionData.hetp_base_mm) { option.dataset.hetp = optionData.hetp_base_mm; }
+                sizeSelect.add(option);
+                if (optionData.value === currentSizeValue) {
+                    newSelectedIndex = index;
+                    foundPreviousValueOrSimilar = true;
+                }
+            });
+            if (!foundPreviousValueOrSimilar && options.length > 0) {
+                newSelectedIndex = Math.floor(options.length / 2);
+            }
+            sizeSelect.selectedIndex = newSelectedIndex;
+        }
+        runUpdates();
+   }
+
+function updateVisualization() {
+    const height_mm = parseFloat(heightInput.value) || 0;
+    const diameter_mm = parseFloat(diameterInput.value) || 0;
+    const top_plug_mm = parseFloat(heightTopRpnInput.value) || 0;
+    const bottom_plug_mm = parseFloat(heightBottomRpnInput.value) || 0;
+    const selectedType = typeSelect.value;
+
+    const SVG_COLUMN_MAX_WIDTH_UNITS = 100;
+    const SVG_COLUMN_MIN_WIDTH_UNITS = 0;
+    const SVG_DIM_LINE_X_COORD = 15; 
+    const SVG_HEIGHT_LABEL_X_OFFSET = -7; 
+    const SVG_DIAM_LABEL_Y_OFFSET = 20;
+    const SVG_DIAM_LINE_Y_OFFSET = 15;
+
+    let visual_col_width = (diameter_mm / MAX_DIAMETER_MM) * SVG_COLUMN_MAX_WIDTH_UNITS;
+    visual_col_width = Math.max(SVG_COLUMN_MIN_WIDTH_UNITS, Math.min(visual_col_width, SVG_COLUMN_MAX_WIDTH_UNITS));
+    if (diameter_mm <= 0) {
+        visual_col_width = 0;
+    }
+    const visual_col_x = (SVG_VIEWBOX_WIDTH - visual_col_width) / 2;
+
+    let svg_top_plug_h = 0, svg_packing_h = 0, svg_bottom_plug_h = 0, visual_total_col_h = 0;
+
+    if (height_mm > 0 && diameter_mm > 0) {
+        const actual_packing_mm = Math.max(0, height_mm - top_plug_mm - bottom_plug_mm);
+        if (top_plug_mm + bottom_plug_mm >= height_mm) {
+            const total_plugs_relevant_mm = top_plug_mm + bottom_plug_mm;
+            if (total_plugs_relevant_mm > 0) {
+                svg_top_plug_h = (top_plug_mm / total_plugs_relevant_mm) * MAX_VISUAL_HEIGHT_SVG;
+                svg_bottom_plug_h = (bottom_plug_mm / total_plugs_relevant_mm) * MAX_VISUAL_HEIGHT_SVG;
+            }
+            svg_packing_h = 0;
+        } else {
+            svg_top_plug_h = (top_plug_mm / height_mm) * MAX_VISUAL_HEIGHT_SVG;
+            svg_packing_h = (actual_packing_mm / height_mm) * MAX_VISUAL_HEIGHT_SVG;
+            svg_bottom_plug_h = (bottom_plug_mm / height_mm) * MAX_VISUAL_HEIGHT_SVG;
+        }
+        visual_total_col_h = svg_top_plug_h + svg_packing_h + svg_bottom_plug_h;
+        if (visual_total_col_h > MAX_VISUAL_HEIGHT_SVG && visual_total_col_h > 0.001) {
+             const scale_correction = MAX_VISUAL_HEIGHT_SVG / visual_total_col_h;
+             svg_top_plug_h *= scale_correction; svg_packing_h *= scale_correction; svg_bottom_plug_h *= scale_correction;
+             visual_total_col_h = MAX_VISUAL_HEIGHT_SVG;
+        }
+        visual_total_col_h = Math.max(0, visual_total_col_h);
+    }
+
+    svgColumnOutline.setAttribute('x', visual_col_x); 
+    svgColumnOutline.setAttribute('width', visual_col_width);
+    svgColumnOutline.setAttribute('height', visual_total_col_h);
+    svgTopPlug.setAttribute('x', visual_col_x); svgTopPlug.setAttribute('y', 0);
+    svgTopPlug.setAttribute('width', visual_col_width); svgTopPlug.setAttribute('height', svg_top_plug_h);
+    svgPacking.setAttribute('x', visual_col_x); svgPacking.setAttribute('y', svg_top_plug_h);
+    svgPacking.setAttribute('width', visual_col_width); svgPacking.setAttribute('height', svg_packing_h);
+    svgPacking.style.fill = selectedType === 'copper' ? 'rgba(184, 115, 51, 0.15)' : 'rgba(0, 0, 0, 0.08)';
+    svgBottomPlug.setAttribute('x', visual_col_x); svgBottomPlug.setAttribute('y', svg_top_plug_h + svg_packing_h);
+    svgBottomPlug.setAttribute('width', visual_col_width); svgBottomPlug.setAttribute('height', svg_bottom_plug_h);
+
+    svgHeightLabel.textContent = `${height_mm.toFixed(0)} мм`;
+    if (visual_total_col_h > 1 && diameter_mm > 0) {
+        const visual_center_y = visual_total_col_h / 2;
+        svgHeightLineVert.setAttribute('x1', SVG_DIM_LINE_X_COORD); svgHeightLineVert.setAttribute('x2', SVG_DIM_LINE_X_COORD);
+        svgHeightLineVert.setAttribute('y1', 0); svgHeightLineVert.setAttribute('y2', visual_total_col_h);
+        svgHeightLineVert.style.display = '';
+        svgHeightLineTop.setAttribute('x1', SVG_DIM_LINE_X_COORD); svgHeightLineTop.setAttribute('x2', visual_col_x);
+        svgHeightLineTop.setAttribute('y1', 0); svgHeightLineTop.setAttribute('y2', 0);
+        svgHeightLineTop.style.display = '';
+        svgHeightLineBottom.setAttribute('x1', SVG_DIM_LINE_X_COORD); svgHeightLineBottom.setAttribute('x2', visual_col_x);
+        svgHeightLineBottom.setAttribute('y1', visual_total_col_h); svgHeightLineBottom.setAttribute('y2', visual_total_col_h);
+        svgHeightLineBottom.style.display = '';
+
+        const rotatedLabelX = SVG_DIM_LINE_X_COORD + SVG_HEIGHT_LABEL_X_OFFSET;
+        svgHeightLabel.setAttribute('x', rotatedLabelX);
+        svgHeightLabel.setAttribute('y', visual_center_y);
+        svgHeightLabel.setAttribute('transform', `rotate(-90 ${rotatedLabelX} ${visual_center_y})`);
+        svgHeightLabel.setAttribute('text-anchor', 'middle');
+        svgHeightLabel.setAttribute('dominant-baseline', 'central');
+        svgHeightLabel.style.display = '';
+    } else {
+        svgHeightLineVert.style.display = 'none'; svgHeightLineTop.style.display = 'none'; svgHeightLineBottom.style.display = 'none';
+        svgHeightLabel.setAttribute('x', 5);
+        svgHeightLabel.setAttribute('y', 15);
+        svgHeightLabel.setAttribute('transform', 'rotate(0)');
+        svgHeightLabel.setAttribute('text-anchor', 'start');
+        svgHeightLabel.setAttribute('dominant-baseline', 'hanging');
+        svgHeightLabel.style.display = '';
+    }
+
+    svgDiameterLabel.textContent = `${diameter_mm.toFixed(0)} мм`; 
+    if (diameter_mm > 0 && visual_col_width > 0 && height_mm > 0) {
+        const diam_line_y = visual_total_col_h + SVG_DIAM_LINE_Y_OFFSET;
+        const diam_label_y = diam_line_y + SVG_DIAM_LABEL_Y_OFFSET;
+        svgDiameterLineHorz.setAttribute('x1', visual_col_x); svgDiameterLineHorz.setAttribute('x2', visual_col_x + visual_col_width);
+        svgDiameterLineHorz.setAttribute('y1', diam_line_y); svgDiameterLineHorz.setAttribute('y2', diam_line_y);
+        svgDiameterLineHorz.style.display = '';
+        svgDiameterLineLeft.setAttribute('x1', visual_col_x); svgDiameterLineLeft.setAttribute('x2', visual_col_x);
+        svgDiameterLineLeft.setAttribute('y1', visual_total_col_h); svgDiameterLineLeft.setAttribute('y2', diam_line_y + 5);
+        svgDiameterLineLeft.style.display = '';
+        svgDiameterLineRight.setAttribute('x1', visual_col_x + visual_col_width); svgDiameterLineRight.setAttribute('x2', visual_col_x + visual_col_width);
+        svgDiameterLineRight.setAttribute('y1', visual_total_col_h); svgDiameterLineRight.setAttribute('y2', diam_line_y + 5);
+        svgDiameterLineRight.style.display = '';
+        svgDiameterLabel.setAttribute('x', visual_col_x + visual_col_width / 2);
+        svgDiameterLabel.setAttribute('y', diam_label_y);
+        svgDiameterLabel.setAttribute('text-anchor', 'middle');
+        svgDiameterLabel.setAttribute('dominant-baseline', 'central');
+        svgDiameterLabel.style.display = '';
+    } else {
+        svgDiameterLineHorz.style.display = 'none'; svgDiameterLineLeft.style.display = 'none'; svgDiameterLineRight.style.display = 'none';
+        let fallback_diam_label_y = MAX_VISUAL_HEIGHT_SVG + SVG_DIAM_LINE_Y_OFFSET + SVG_DIAM_LABEL_Y_OFFSET + 10;
+        if (visual_total_col_h > 1 && diameter_mm <= 0) {
+             fallback_diam_label_y = visual_total_col_h + SVG_DIAM_LINE_Y_OFFSET + SVG_DIAM_LABEL_Y_OFFSET;
+        } else if (height_mm <= 0 && diameter_mm > 0) {
+            fallback_diam_label_y = 30;
+        }
+        svgDiameterLabel.setAttribute('x', SVG_VIEWBOX_WIDTH / 2);
+        svgDiameterLabel.setAttribute('y', fallback_diam_label_y);
+        svgDiameterLabel.setAttribute('text-anchor', 'middle');
+        svgDiameterLabel.setAttribute('dominant-baseline', 'central');
+        svgDiameterLabel.style.display = '';
+    }
+}
+
+  function validateInputs() {
+    const heightVal = parseFloat(heightInput.value) || 0;
+    const diameterVal = parseFloat(diameterInput.value) || 0;
+    const heightTopRpnVal = parseFloat(heightTopRpnInput.value) || 0;
+    const heightBottomRpnVal = parseFloat(heightBottomRpnInput.value) || 0;
+    let isValid = true;
+    [heightInput, diameterInput, heightTopRpnInput, heightBottomRpnInput, typeSelect, sizeSelect].forEach(el => {
+        el.classList.remove('is-invalid');
+        const validationMsgId = el.getAttribute('aria-describedby')?.split(' ')[0];
+        if (validationMsgId) {
+            const validationMsgEl = document.getElementById(validationMsgId);
+            if (validationMsgEl && validationMsgEl.classList.contains('spn-calc-validation-message')) {
+                validationMsgEl.textContent = '';
+            }
+        }
+    });
+    if (calcStatus.textContent.startsWith("Ошибка:")) calcStatus.textContent = "";
+    if (heightVal > 0 && (heightTopRpnVal + heightBottomRpnVal >= heightVal)) {
+        isValid = false;
+        const msg = "Сумма пыжей ≥ высоты царги!";
+        [heightInput, heightTopRpnInput, heightBottomRpnInput].forEach(inp => inp.classList.add('is-invalid'));
+        document.getElementById('spnHeightValidation').textContent = msg;
+        if (!calcStatus.textContent.startsWith("Ошибка:")) calcStatus.textContent = "Ошибка: " + msg;
+    }
+    if (diameterInput.value.trim() !== '' && diameterVal <=0) {
+        isValid = false; diameterInput.classList.add('is-invalid');
+        const msg = "Диаметр должен быть > 0";
+        document.getElementById('spnDiameterValidation').textContent = msg;
+        if (!calcStatus.textContent.startsWith("Ошибка:")) calcStatus.textContent = "Ошибка: " + msg;
+    }
+     if (heightInput.value.trim() !== '' && heightVal <= 0) {
+        isValid = false; heightInput.classList.add('is-invalid');
+        const msg = "Высота царги должна быть > 0";
+        document.getElementById('spnHeightValidation').textContent = msg;
+         if (!calcStatus.textContent.startsWith("Ошибка:")) calcStatus.textContent = "Ошибка: " + msg;
+    }
+    return isValid;
+}
+
+  function updateResult() {
+      const height = parseFloat(heightInput.value) || 0;
+      const diameter = parseFloat(diameterInput.value) || 0;
+      const heightTopRpn = parseFloat(heightTopRpnInput.value) || 0;
+      const heightBottomRpn = parseFloat(heightBottomRpnInput.value) || 0;
+      const selectedSizeOption = sizeSelect.options[sizeSelect.selectedIndex];
+      const density = selectedSizeOption ? parseFloat(selectedSizeOption.value) : 0;
+      const inputsAreValid = validateInputs();
+      const packingData = getSelectedPackingData();
+      const canCalculate = inputsAreValid && height > 0 && diameter > 0 && density > 0;
+      let volumeL_val = 0, weightG_val = 0, weightKg_val = 0;
+      let hetp_mm_val = "N/A", power_kW_val = "N/A", powerFormatted = "N/A";
+      if (canCalculate) {
+          const radiusM = diameter / 1000 / 2;
+          let fillHeightM = Math.max(0, (height - heightTopRpn - heightBottomRpn)) / 1000;
+          volumeL_val = Math.PI * radiusM * radiusM * fillHeightM * 1000;
+          weightG_val = volumeL_val * density;
+          weightKg_val = weightG_val / 1000;
+          if (packingData && packingData.hetp_base_mm) {
+              const baseHetp = packingData.hetp_base_mm;
+              const diameterCorrection = Math.max(0, (diameter - 50) / 20) * 1;
+              hetp_mm_val = (baseHetp + diameterCorrection).toFixed(0);
+          }
+          const diameter_cm = diameter / 10;
+          const radius_cm = diameter_cm / 2;
+          const area_cm2 = Math.PI * radius_cm * radius_cm;
+          const power_W = 11 * area_cm2;
+          power_kW_val = (power_W / 1000);
+          powerFormatted = power_kW_val < 10 ? power_kW_val.toFixed(2) : power_kW_val.toFixed(1);
+      }
+      resultVolumeValue.innerHTML = `${volumeL_val > 0 ? volumeL_val.toFixed(2) : '0.00'} <span class="unit">л</span>`;
+      resultWeightValue.innerHTML = `${weightG_val > 0 ? weightG_val.toFixed(0) : '0'} <span class="unit">г</span><span class="unit-kg">(${weightKg_val > 0 ? weightKg_val.toFixed(2) : '0.00'} кг)</span>`;
+      hetpResultValue.innerHTML = `${hetp_mm_val} <span class="unit">мм</span>`;
+      powerResultValue.innerHTML = `${powerFormatted} <span class="unit">кВт</span>`;
+      resultItems.forEach(item => {
+          item.classList.remove('result-updated');
+          void item.offsetWidth;
+          item.classList.add('result-updated');
+      });
+      if (inputsAreValid && !calcStatus.textContent.startsWith("Ошибка:")) {
+         if (document.activeElement !== heightInput && document.activeElement !== diameterInput &&
+             document.activeElement !== heightTopRpnInput && document.activeElement !== heightBottomRpnInput) {
+            calcStatus.textContent = 'Расчет обновлен.';
+         }
+      }
+  }
+
+  function updateButtonActiveStates() {
+     parameterGroups.forEach(group => {
+        const inputElement = group.querySelector('input.spn-calc-form-control, select.spn-calc-form-control');
+        const quickSelectItems = group.querySelectorAll('button.spn-calc-quick-select-item');
+        if (inputElement && quickSelectItems.length > 0) {
+            const currentValue = inputElement.value;
+            quickSelectItems.forEach(button => {
+                if (button.getAttribute('data-value') === currentValue) {
+                    button.classList.add('is-active');
+                } else {
+                    button.classList.remove('is-active');
+                }
+            });
+        }
+    });
+  }
+
+  function runUpdates() {
+    if (sizeSelect.options.length > 0 && sizeSelect.selectedIndex >= 0) {
+        const selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
+        const selectedDensity = selectedOption.value;
+        const densityText = selectedDensity ? `(Плотность: ${selectedDensity} г/л)` : '';
+        densityDisplaySpan.textContent = densityText;
+    } else {
+        densityDisplaySpan.textContent = '';
+    }
+    updateButtonActiveStates();
+    updateVisualization();
+    updateResult();
+  }
+
+  parameterGroups.forEach(group => {
+    const inputElement = group.querySelector('.spn-calc-form-control');
+    if (inputElement) {
+        const eventType = (inputElement.tagName.toLowerCase() === 'input' && inputElement.type === 'number') ? 'input' : 'change';
+        inputElement.addEventListener(eventType, runUpdates);
+    }
+  });
+  typeSelect.addEventListener('change', updateSizeOptions);
+  parameterGroups.forEach(group => {
+    const quickSelectItems = group.querySelectorAll('button.spn-calc-quick-select-item');
+    const inputElement = group.querySelector('.spn-calc-form-control');
+    if (quickSelectItems.length > 0 && inputElement) {
+        quickSelectItems.forEach(button => {
+            button.addEventListener('click', function() {
+                const value = this.getAttribute('data-value');
+                if (value !== null) {
+                    inputElement.value = value;
+                    const eventNameToTrigger = (inputElement.tagName.toLowerCase() === 'input' && inputElement.type === 'number') ? 'input' : 'change';
+                    inputElement.dispatchEvent(new Event(eventNameToTrigger, { bubbles: true }));
+                }
+            });
+        });
+    }
+  });
+  document.querySelectorAll('.spn-calc-container input[type="number"]').forEach(input => {
+    input.addEventListener('wheel', (event) => {}, { passive: true });
+  });
+
+  heightInput.value = defaultValues.height;
+  diameterInput.value = defaultValues.diameter;
+  heightTopRpnInput.value = defaultValues.heightTopRpn;
+  heightBottomRpnInput.value = defaultValues.heightBottomRpn;
+  typeSelect.value = defaultValues.type;
+  updateSizeOptions();
+
+});
+</script>
+
+</body>
+</html>
