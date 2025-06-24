@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parallel Gemini Voice Synthesizer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Parallel Gemini Voice Synthesizer</h1>
+        <textarea id="text-input" placeholder="Enter text here..."></textarea>
+        <div class="controls">
+            <select id="voice-select">
+                <option value="female">Female</option>
+                <option value="male">Male</option>
+            </select>
+            <button id="generate-btn">Generate Audio</button>
+        </div>
+        <div id="status-area">
+            <!-- Status messages will appear here -->
+        </div>
+        <div id="download-area">
+            <!-- Download link/button will appear here -->
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

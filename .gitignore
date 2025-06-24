@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+.Python
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# IDE / Editor specific
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Audio files (if stored temporarily, adjust as needed)
+*.mp3
+# If you have a specific directory for temp audio chunks:
+# temp_audio_chunks/
+
+# OS generated files
+.DS_Store
+Thumbs.db
