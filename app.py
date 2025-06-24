@@ -1,8 +1,10 @@
 import os
 import uuid
 import concurrent.futures
+import traceback # For detailed error logging
+import io # For handling byte streams if needed for genai
 from flask import Flask, request, jsonify, send_file, render_template
-from google import generativeai as genai
+from google.generativeai importGenerativeModel # Placeholder for actual Gemini TTS client/model
 from pydub import AudioSegment
 from dotenv import load_dotenv
 
@@ -10,227 +12,244 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Load API keys
+# --- Configuration ---
 GOOGLE_API_KEYS = os.getenv('GOOGLE_API_KEYS')
-if GOOGLE_API_KEYS:
-    API_KEYS = GOOGLE_API_KEYS.split(',')
-else:
-    API_KEYS = []
+API_KEYS = [key.strip() for key in GOOGLE_API_KEYS.split(',')] if GOOGLE_API_KEYS else []
 
 if not API_KEYS:
-    print("WARNING: GOOGLE_API_KEYS environment variable not set or empty. TTS functionality will not work.")
+    print("WARNING: GOOGLE_API_KEYS environment variable not set or empty. TTS functionality will be simulated and may not work as expected with actual API calls.")
 
-# Configuration
-TEXT_CHUNK_SIZE = 4800  # Max characters per chunk for Gemini API
-TEMP_DIR = "temp_audio_chunks"
-os.makedirs(TEMP_DIR, exist_ok=True)
+TEXT_CHUNK_SIZE = 4800  # Max characters per chunk (Gemini Pro limit is often higher, but TTS specific models might differ)
+SILENCE_BETWEEN_CHUNKS_MS = 500 # 500ms silence
+TEMP_AUDIO_DIR = "temp_audio_chunks"
+os.makedirs(TEMP_AUDIO_DIR, exist_ok=True)
 
-def synthesize_chunk(text_chunk, api_key, voice_name, chunk_index):
-    """Synthesizes a single text chunk using a given API key."""
+# --- TTS Worker Function ---
+def synthesize_chunk_worker(text_chunk, api_key_for_chunk, voice_name_placeholder, chunk_index, request_temp_dir):
+    """
+    Synthesizes a single text chunk using a given API key.
+    This function is designed to be run in a separate process.
+    voice_name_placeholder: Actual Gemini API might use model names or other params for voice.
+    """
+    # In a real scenario, genai.configure(api_key=api_key_for_chunk) might be needed here
+    # if the client isn't configured globally or per-instance in the main thread.
+    # For ProcessPoolExecutor, each process should configure its own client instance.
+
+    # genai.configure(api_key=api_key_for_chunk) # Potentially needed per process
+    # model = GenerativeModel('gemini-pro') # Or specific TTS model
+
+    temp_file_path = os.path.join(request_temp_dir, f"chunk_{chunk_index}_{uuid.uuid4()}.mp3")
+
     try:
-        print(f"Synthesizing chunk {chunk_index} with key ending ...{api_key[-4:]}")
-        genai.configure(api_key=api_key)
+        print(f"[Chunk {chunk_index}] Starting synthesis with key ending ...{api_key_for_chunk[-4:] if api_key_for_chunk else 'N/A'}.")
 
-        # Model selection based on voice_name - this is a placeholder
-        # Gemini's current Text-to-Speech might not have direct "male/female" voice names.
-        # This needs to be adapted to the actual API's voice selection mechanism.
-        # For now, we'll use a generic model or assume the API key is tied to a default voice.
-        # The prompt below is a placeholder for what might be needed.
-        # Actual implementation depends on the specific Gemini model and its TTS capabilities.
+        # --- !!! ACTUAL GEMINI API CALL SIMULATION !!! ---
+        # Replace this block with actual google.generativeai calls for Text-to-Speech
+        # The exact API (e.g., genai.text_to_speech(), or a method on a model instance)
+        # and parameters (for voice, output format etc.) will depend on the Gemini SDK version
+        # and the specific TTS model you intend to use.
 
-        # Placeholder: This part needs to be updated based on Gemini's TTS API specifics
-        # For example, if the API uses specific voice model names:
-        # model_name = "gemini-tts-voice-female" if voice_name == "female" else "gemini-tts-voice-male"
-        # Or if it's part of the prompt / request structure.
-        # As of my last update, direct TTS with voice selection in Gemini was through specific models
-        # or parameters not just "male"/"female".
-        # For this example, I'll assume a generic TTS model is available.
-        # If a specific model is needed, it should be specified here.
+        if not api_key_for_chunk or "YOUR_GOOGLE_API_KEY" in api_key_for_chunk: # Basic check for placeholder key
+            print(f"[Chunk {chunk_index}] SIMULATING TTS due to placeholder or missing API key.")
+            # Simulate varying lengths for silence based on text length
+            silence_duration_ms = len(text_chunk) * 5 # Rough estimate: 5ms per character for simulation
+            audio_content_simulated = AudioSegment.silent(duration=silence_duration_ms)
+        else:
+            # This is where you'd put the real call:
+            # print(f"[Chunk {chunk_index}] Attempting REAL API call (conceptual)...")
+            # response = model.generate_content( # This is a generic Gemini call, TTS will be specific
+            #     f"Speak this in a {voice_name_placeholder} voice: {text_chunk}"
+            #     # ... other parameters like voice selection, audio config ...
+            # )
+            # audio_bytes = response.candidates[0].content.parts[0].inline_data.data # Highly speculative path to audio bytes
+            # audio_content_simulated = AudioSegment.from_file(io.BytesIO(audio_bytes), format="mp3") # Or appropriate format
+            # For now, still simulating as no live API calls allowed here.
+            print(f"[Chunk {chunk_index}] SIMULATING TTS as live API calls are not enabled in this environment.")
+            silence_duration_ms = len(text_chunk) * 5
+            audio_content_simulated = AudioSegment.silent(duration=silence_duration_ms)
 
-        # This is a conceptual representation. The actual API call might differ.
-        # It's highly likely that Gemini's TTS will be part of a multimodal model or a specific TTS endpoint.
-        # The following is a generic placeholder for making a TTS request.
-        # YOU WILL LIKELY NEED TO ADJUST THIS PART BASED ON THE ACTUAL GEMINI TTS API DOCUMENTATION.
-
-        # Let's assume for now that the default model for the API key is used,
-        # and voice differentiation might be less direct or require different models/prompts.
-        # For the purpose of this structure, we'll proceed with a generic call.
-
-        # This is a mock-up of what a call *might* look like.
-        # response = genai.generate_text( # Or appropriate TTS function
-        #     prompt=f"Synthesize the following text in a {voice_name} voice: {text_chunk}",
-        #     # model="models/text-to-speech-model" # Placeholder for actual model
-        # )
-        # audio_content = response.audio_content # Assuming response has this attribute
-
-        # --- SIMULATED API CALL FOR NOW ---
-        # Since I cannot make actual API calls here and to show the structure,
-        # I will simulate audio generation by creating a silent audio segment.
-        # In a real scenario, this would be the actual API call and audio content retrieval.
-        print(f"Simulating TTS for chunk {chunk_index}: '{text_chunk[:30]}...'")
-        silence_duration = len(text_chunk) * 10 # ms, e.g. 10ms per char
-        audio_segment = AudioSegment.silent(duration=silence_duration)
         # --- END OF SIMULATION ---
 
-        # In a real scenario, you would get raw audio data (e.g., MP3, WAV bytes)
-        # audio_segment = AudioSegment.from_file(io.BytesIO(audio_content), format="mp3") # Or other format
+        audio_content_simulated.export(temp_file_path, format="mp3")
+        print(f"[Chunk {chunk_index}] Successfully synthesized and saved to {temp_file_path}")
+        return {"status": "success", "path": temp_file_path, "chunk_index": chunk_index}
 
-        temp_file_path = os.path.join(TEMP_DIR, f"chunk_{chunk_index}_{uuid.uuid4()}.mp3")
-        audio_segment.export(temp_file_path, format="mp3")
-        print(f"Chunk {chunk_index} saved to {temp_file_path}")
-        return temp_file_path
     except Exception as e:
-        print(f"Error synthesizing chunk {chunk_index} with key ...{api_key[-4:]}: {e}")
-        # Propagate a more specific error or None to indicate failure
-        raise RuntimeError(f"Failed to synthesize chunk {chunk_index}: {str(e)}")
+        print(f"!!!!!! ERROR in synthesize_chunk_worker for chunk {chunk_index} !!!!!!")
+        print(f"Text (first 50 chars): {text_chunk[:50]}")
+        print(f"API Key Used (last 4): ...{api_key_for_chunk[-4:] if api_key_for_chunk else 'N/A'}")
+        print(f"Voice Placeholder: {voice_name_placeholder}")
+        print("--- Full Traceback ---")
+        traceback.print_exc() # Logs full traceback to console (where Flask server runs)
+        print("--- End Traceback ---")
+
+        error_message = f"Error during synthesis of chunk {chunk_index}: {type(e).__name__} - {str(e)}"
+        # Attempt to remove partially created file if it exists
+        if os.path.exists(temp_file_path):
+            try:
+                os.remove(temp_file_path)
+            except OSError:
+                print(f"[Chunk {chunk_index}] Error: Could not remove partially created temp file {temp_file_path} during error handling.")
+        return {"status": "error", "message": error_message, "chunk_index": chunk_index, "error_type": type(e).__name__}
 
 
+# --- Flask Routes ---
 @app.route('/')
 def index():
     return render_template('index.html')
 
 @app.route('/synthesize', methods=['POST'])
-def synthesize():
+def synthesize_route():
     if not API_KEYS:
-        return jsonify({"error": "API keys are not configured on the server."}), 500
+        return jsonify({"error": "API keys are not configured on the server. Please set GOOGLE_API_KEYS."}), 500
 
     data = request.get_json()
     text = data.get('text')
-    voice = data.get('voice', 'female') # Default to female if not specified
+    voice_selection = data.get('voice', 'female') # Placeholder, actual use depends on Gemini API
 
     if not text:
-        return jsonify({"error": "Text is required."}), 400
+        return jsonify({"error": "Text input is required."}), 400
 
     text_chunks = [text[i:i + TEXT_CHUNK_SIZE] for i in range(0, len(text), TEXT_CHUNK_SIZE)]
     num_chunks = len(text_chunks)
-    temp_audio_files = [None] * num_chunks # To store paths in correct order
 
-    # Use a unique directory for this request's chunks to avoid filename collisions
-    request_temp_dir = os.path.join(TEMP_DIR, str(uuid.uuid4()))
-    os.makedirs(request_temp_dir, exist_ok=True)
+    # Create a unique temporary directory for this request's audio chunks
+    request_specific_temp_dir = os.path.join(TEMP_AUDIO_DIR, str(uuid.uuid4()))
+    os.makedirs(request_specific_temp_dir, exist_ok=True)
 
-    print(f"Processing {num_chunks} chunks for text of length {len(text)}.")
+    print(f"Processing {num_chunks} chunks in directory: {request_specific_temp_dir}")
 
-    # Using ProcessPoolExecutor for true parallelism
-    # Note: If the genai library or its authentication is not process-safe,
-    # ThreadPoolExecutor might be an alternative, but with GIL limitations for CPU-bound parts.
-    # Assuming genai client can be configured per process.
+    chunk_results = [None] * num_chunks
+    successful_audio_files_ordered = []
+
     with concurrent.futures.ProcessPoolExecutor(max_workers=len(API_KEYS)) as executor:
-        futures = {}
-        for i, chunk in enumerate(text_chunks):
-            api_key_for_chunk = API_KEYS[i % len(API_KEYS)]
-            # Pass request_temp_dir to worker or ensure TEMP_DIR is used correctly
-            # For simplicity, synthesize_chunk will use TEMP_DIR directly but ensure filenames are unique.
-            # A better approach might be to pass a dedicated sub-folder per request.
-            # Let's refine synthesize_chunk to accept a base temp_dir.
-            # Modifying call to synthesize_chunk to include request_temp_dir for cleaner separation (conceptually)
-            # However, synthesize_chunk currently uses global TEMP_DIR. Let's keep it simple for now with UUIDs.
+        future_to_chunk_index = {}
+        for i, chunk_text in enumerate(text_chunks):
+            api_key = API_KEYS[i % len(API_KEYS)]
+            future = executor.submit(synthesize_chunk_worker, chunk_text, api_key, voice_selection, i, request_specific_temp_dir)
+            future_to_chunk_index[future] = i
 
-            future = executor.submit(synthesize_chunk, chunk, api_key_for_chunk, voice, i)
-            futures[future] = i # Store index to map back
-
-        for future in concurrent.futures.as_completed(futures):
-            original_index = futures[future]
+        for future in concurrent.futures.as_completed(future_to_chunk_index):
+            original_index = future_to_chunk_index[future]
             try:
-                temp_file_path = future.result()
-                if temp_file_path:
-                    temp_audio_files[original_index] = temp_file_path
-                else:
-                    # Handle case where a chunk failed but didn't raise an exception that was caught by the main try-except
-                    raise RuntimeError(f"Chunk {original_index} processing returned None.")
-            except Exception as e:
-                print(f"A chunk failed to process: {e}")
-                # Cleanup already processed chunks for this request
-                for f_path in temp_audio_files:
-                    if f_path and os.path.exists(f_path):
-                        try:
-                            os.remove(f_path)
-                        except OSError:
-                            print(f"Error cleaning up temp file {f_path} during error handling.")
-                if os.path.exists(request_temp_dir): # Clean the request specific temp dir
-                     try:
-                        # Make sure it's empty before removing, or use shutil.rmtree
-                        for item in os.listdir(request_temp_dir):
-                            item_path = os.path.join(request_temp_dir, item)
-                            if os.path.isfile(item_path):
-                                os.remove(item_path)
-                        os.rmdir(request_temp_dir)
-                     except Exception as cleanup_error:
-                        print(f"Error cleaning up request temp directory {request_temp_dir}: {cleanup_error}")
-                return jsonify({"error": f"Failed to generate audio for all chunks. {str(e)}"}), 500
+                result = future.result()
+                chunk_results[original_index] = result
+            except Exception as e: # Should ideally be caught within the worker
+                print(f"Critical error from ProcessPoolExecutor future for chunk {original_index}: {e}")
+                traceback.print_exc()
+                chunk_results[original_index] = {"status": "error", "message": f"Future संकल्पना में त्रुटि: {str(e)}", "chunk_index": original_index, "error_type": type(e).__name__}
 
-    if None in temp_audio_files:
-        # This case should ideally be caught by the exception handling above.
-        # Cleanup any files that were created
-        for f_path in temp_audio_files:
-            if f_path and os.path.exists(f_path):
-                os.remove(f_path)
-        # Consider removing request_temp_dir here as well
-        return jsonify({"error": "One or more audio chunks could not be generated."}), 500
 
-    print(f"All chunks processed: {temp_audio_files}")
+    # Check results and prepare for concatenation
+    any_errors = False
+    first_error_details = None
+    for i, result in enumerate(chunk_results):
+        if not result or result.get("status") == "error":
+            any_errors = True
+            print(f"Error in chunk {i}: {result.get('message', 'Unknown error') if result else 'No result'}")
+            if not first_error_details: # Capture the first error for frontend
+                 first_error_details = result if result else {"message": f"Chunk {i} failed processing with no details.", "chunk_index": i}
+            # No need to add to successful_audio_files_ordered if it failed
+        else:
+            successful_audio_files_ordered.append(result.get("path")) # Add path of successful chunk
 
-    # Concatenate audio files
+    if any_errors:
+        # Cleanup all files in request_specific_temp_dir on any error
+        for item in os.listdir(request_specific_temp_dir):
+            item_path = os.path.join(request_specific_temp_dir, item)
+            try:
+                if os.path.isfile(item_path): os.remove(item_path)
+            except Exception as e_clean:
+                print(f"Error cleaning up {item_path} during error handling: {e_clean}")
+        try:
+            os.rmdir(request_specific_temp_dir)
+        except Exception as e_rmdir:
+            print(f"Error removing temp directory {request_specific_temp_dir}: {e_rmdir}")
+
+        # Return the first encountered error to the frontend
+        error_to_send = {
+            "error": "Failed to generate audio for one or more chunks.",
+            "details": first_error_details.get("message", "No specific error message available."),
+            "chunk_index": first_error_details.get("chunk_index", -1),
+            "error_type": first_error_details.get("error_type", "UnknownError")
+        }
+        return jsonify(error_to_send), 500
+
+    if not successful_audio_files_ordered: # Should be caught by any_errors if chunk_results was populated
+        return jsonify({"error": "No audio chunks were successfully generated."}), 500
+
+    # Concatenate audio files with silence
+    final_audio = AudioSegment.empty()
+    silence_segment = AudioSegment.silent(duration=SILENCE_BETWEEN_CHUNKS_MS)
+
     try:
-        final_audio = AudioSegment.empty()
-        for temp_file_path in temp_audio_files:
-            if not temp_file_path or not os.path.exists(temp_file_path): # Should not happen if checks above are fine
-                raise ValueError(f"Missing or invalid temp file path: {temp_file_path}")
-            chunk_audio = AudioSegment.from_mp3(temp_file_path)
+        for i, file_path in enumerate(successful_audio_files_ordered):
+            if not file_path or not os.path.exists(file_path):
+                # This should not happen if logic above is correct
+                raise ValueError(f"Missing or invalid temp file path: {file_path} for chunk index {i}") # Find original index if needed
+
+            chunk_audio = AudioSegment.from_mp3(file_path)
             final_audio += chunk_audio
+            if i < len(successful_audio_files_ordered) - 1: # Don't add silence after the last chunk
+                final_audio += silence_segment
 
         final_output_filename = f"final_audio_{uuid.uuid4()}.mp3"
-        final_output_path = os.path.join(TEMP_DIR, final_output_filename) # Store final audio also in TEMP_DIR temporarily
+        # Store final audio in main TEMP_AUDIO_DIR, not request_specific_temp_dir as that will be deleted
+        final_output_path = os.path.join(TEMP_AUDIO_DIR, final_output_filename)
         final_audio.export(final_output_path, format="mp3")
-        print(f"Final audio exported to {final_output_path}")
+        print(f"Final audio successfully concatenated to {final_output_path} with {SILENCE_BETWEEN_CHUNKS_MS}ms silence between chunks.")
 
     except Exception as e:
-        print(f"Error concatenating audio files: {e}")
+        print(f"Error during audio concatenation: {e}")
+        traceback.print_exc()
+        # Cleanup successful_audio_files_ordered and request_specific_temp_dir as concatenation failed
         return jsonify({"error": f"Failed to concatenate audio files: {str(e)}"}), 500
     finally:
-        # Cleanup individual chunk files
-        for temp_file_path in temp_audio_files:
-            if temp_file_path and os.path.exists(temp_file_path):
+        # Cleanup individual chunk files and the request-specific directory
+        for file_path in successful_audio_files_ordered: # These are paths of successfully processed chunks
+            if file_path and os.path.exists(file_path):
                 try:
-                    os.remove(temp_file_path)
-                    print(f"Cleaned up temp chunk file: {temp_file_path}")
-                except OSError as e:
-                    print(f"Error deleting temp chunk file {temp_file_path}: {e}")
-        # Cleanup the request-specific temporary directory if it's empty
-        # This logic might need to be more robust if other files could be in request_temp_dir
+                    os.remove(file_path)
+                except OSError as e_clean:
+                    print(f"Error deleting temp chunk file {file_path}: {e_clean}")
         try:
-            if os.path.exists(request_temp_dir) and not os.listdir(request_temp_dir):
-                os.rmdir(request_temp_dir)
-                print(f"Cleaned up request temp directory: {request_temp_dir}")
-        except OSError as e:
-            print(f"Error deleting request temp directory {request_temp_dir}: {e}")
+            if os.path.exists(request_specific_temp_dir) and not os.listdir(request_specific_temp_dir): # Check if empty
+                os.rmdir(request_specific_temp_dir)
+            elif os.path.exists(request_specific_temp_dir): # If not empty, something went wrong or there are other files
+                 print(f"Warning: Request temp directory {request_specific_temp_dir} was not empty during cleanup. Manual check might be needed.")
+        except OSError as e_rmdir:
+            print(f"Error deleting request temp directory {request_specific_temp_dir}: {e_rmdir}")
 
-
-    # Send the file and then clean it up
+    # Send the file and then schedule its cleanup
     try:
         return send_file(
             final_output_path,
             as_attachment=True,
-            download_name='synthesized_audio.mp3',
+            download_name='bulletproof_synthesized_audio.mp3',
             mimetype='audio/mpeg'
         )
     finally:
-        # Clean up the final concatenated file after sending
+        # Cleanup the final concatenated file after sending
+        # This might be tricky if send_file is asynchronous or streams;
+        # for simple cases, it's often fine. For production, consider background task for cleanup.
         if os.path.exists(final_output_path):
             try:
                 os.remove(final_output_path)
                 print(f"Cleaned up final audio file: {final_output_path}")
-            except OSError as e:
-                print(f"Error deleting final audio file {final_output_path}: {e}")
+            except OSError as e_final_clean:
+                print(f"Error deleting final audio file {final_output_path}: {e_final_clean}")
 
 if __name__ == '__main__':
-    # Make sure to set GOOGLE_API_KEYS in your environment
-    # For development, you can use:
-    # GOOGLE_API_KEYS="key1,key2" python app.py
     if not API_KEYS:
-        print("FATAL: No API keys loaded. Please set the GOOGLE_API_KEYS environment variable.")
-        print("Example: GOOGLE_API_KEYS=\"fakekey1,fakekey2,fakekey3\"")
+        print("--------------------------------------------------------------------")
+        print("WARNING: GOOGLE_API_KEYS not found in .env or is empty.")
+        print("The application will run in SIMULATED TTS mode.")
+        print("Please create a .env file (copy .env.example) and add your keys.")
+        print("--------------------------------------------------------------------")
     else:
-        print(f"Loaded {len(API_KEYS)} API keys.")
+        print(f"Loaded {len(API_KEYS)} API key(s). Application starting.")
 
+    # Note: Using debug=True can cause ProcessPoolExecutor to behave unexpectedly on some OS (e.g. Windows)
+    # or with some module reloading strategies. For production, debug=False is standard.
+    # The launch scripts will run this directly, so debug mode might be less of an issue there.
     app.run(debug=True, host='0.0.0.0', port=5000)

@@ -3,26 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Parallel Gemini Voice Synthesizer</title>
+    <title>Bulletproof Gemini Voice Synthesizer</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container">
-        <h1>Parallel Gemini Voice Synthesizer</h1>
-        <textarea id="text-input" placeholder="Enter text here..."></textarea>
-        <div class="controls">
-            <select id="voice-select">
-                <option value="female">Female</option>
-                <option value="male">Male</option>
-            </select>
-            <button id="generate-btn">Generate Audio</button>
-        </div>
-        <div id="status-area">
-            <!-- Status messages will appear here -->
-        </div>
-        <div id="download-area">
-            <!-- Download link/button will appear here -->
-        </div>
+        <header>
+            <h1>Bulletproof Gemini Voice Synthesizer</h1>
+        </header>
+        <main>
+            <div class="input-section">
+                <label for="text-input">Enter Text:</label>
+                <textarea id="text-input" rows="10" placeholder="Enter the text you want to synthesize..."></textarea>
+            </div>
+
+            <div class="controls-section">
+                <div class="voice-selection">
+                    <label for="voice-select">Select Voice:</label>
+                    <select id="voice-select">
+                        <option value="female">Female</option>
+                        <option value="male">Male</option>
+                    </select>
+                </div>
+                <button id="generate-btn">
+                    <span class="btn-text">Generate Audio</span>
+                    <span class="loader" style="display: none;"></span>
+                </button>
+            </div>
+
+            <div id="status-area" class="status-area" role="status" aria-live="polite">
+                <!-- Status messages will appear here -->
+                Welcome! Enter text and click "Generate Audio".
+            </div>
+
+            <div id="download-area" class="download-area">
+                <!-- Download link/button will appear here -->
+            </div>
+        </main>
+        <footer>
+            <p>&copy; 2024 Bulletproof Synthesizer</p>
+        </footer>
     </div>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
